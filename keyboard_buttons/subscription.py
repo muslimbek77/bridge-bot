@@ -1,4 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import  InlineKeyboardBuilder
+
 from loader import bot
  
 async def check_button(channels):
@@ -17,3 +19,11 @@ async def check_button(channels):
     channels_check = InlineKeyboardMarkup(inline_keyboard=[l])
         
     return channels_check
+
+# Inline tugma yaratuvchi funksiya
+def confirm_kb():
+    kb = InlineKeyboardBuilder()
+    kb.button(text="✅ Yuborish", callback_data="report_send")
+    kb.button(text="❌ Bekor qilish", callback_data="report_delete")
+    kb.adjust(2)
+    return kb.as_markup()
