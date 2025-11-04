@@ -41,7 +41,7 @@ class Database:
     def create_table_reports(self):
         sql = """
         CREATE TABLE IF NOT EXISTS REPORTS(
-        telegram_id NUMBER unique,
+        telegram_id NUMBER,
         full_name TEXT,
         direction TEXT,
         squad TEXT,
@@ -113,12 +113,12 @@ class Database:
         return sql, tuple(parameters.values())
 
 
-    def add_user(self, telegram_id:int, full_name:str):
+    def add_user(self, telegram_id:int, full_name:str,squad:str):
 
         sql = """
-        INSERT INTO Users(telegram_id, full_name) VALUES(?, ?);
+        INSERT INTO Users(telegram_id, full_name, squad) VALUES(?, ?,?);
         """
-        return self.execute(sql, parameters=(telegram_id, full_name), commit=True)
+        return self.execute(sql, parameters=(telegram_id, full_name,squad), commit=True)
 
     def add_chanel(self, chanel_id, chanel_name, chanel_link):
         sql = "INSERT INTO Channels (channel_id, channel_name, channel_link) VALUES(?, ?,?);"
@@ -139,9 +139,9 @@ class Database:
 
 
     def select_user(self, **kwargs):
-        sql = "SELECT * FROM Users WHERE;"
+        sql = "SELECT * FROM Users WHERE "
         sql, parameters = self.format_args(sql, kwargs)
-
+        
         return self.execute(sql, parameters=parameters, fetchone=True)
 
     def count_users(self):

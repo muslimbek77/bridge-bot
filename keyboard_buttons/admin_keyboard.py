@@ -11,12 +11,12 @@ admin_button = ReplyKeyboardMarkup(
         ],
          [
              KeyboardButton(text="➕ Foydalanuvchi qo'shish"),
-            KeyboardButton(text="⛓ Kanallar ro'yxati"), 
+            # KeyboardButton(text="⛓ Kanallar ro'yxati"), 
         ],
-         [
-            KeyboardButton(text="➕ Kanal qo'shish"), 
-            KeyboardButton(text="➖ Kanal o'chirish"), 
-        ],
+        #  [
+        #     KeyboardButton(text="➕ Kanal qo'shish"), 
+        #     KeyboardButton(text="➖ Kanal o'chirish"), 
+        # ],
         
     ],
    resize_keyboard=True,

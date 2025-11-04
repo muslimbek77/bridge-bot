@@ -1,7 +1,8 @@
 from loader import bot,db,dp,ADMINS
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.types import Message,InlineKeyboardButton,ReplyKeyboardRemove,CallbackQuery
+from aiogram.types import Message,ReplyKeyboardRemove,CallbackQuery, KeyboardButtonRequestUser
 from aiogram.filters import Command
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+
 from filters.admin import IsBotAdminFilter
 from states.reklama import Adverts,ChannelState,DelChannelState
 from states.admin import AddUser
@@ -151,10 +152,32 @@ async def golibni_aniqlash_war(call: CallbackQuery, state=FSMContext):
 
 
 # Boshlash
-@dp.message(F.text=="➕ Foydalanuvchi qo'shish", IsBotAdminFilter(ADMINS))
+@dp.message(F.text == "➕ Foydalanuvchi qo'shish", IsBotAdminFilter(ADMINS))
 async def start_add_user(message: Message, state: FSMContext):
+    # Tugma orqali foydalanuvchi tanlash
+    kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(
+                text="👤 Foydalanuvchini tanlash",
+                request_user=KeyboardButtonRequestUser(
+                    request_id=999,  # Request ID har doim unikal bo‘lsin
+                    user_is_bot=False
+                )
+            )]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+
     await state.set_state(AddUser.telegram_id)
-    await message.answer("Foydalanuvchining Telegram ID sini kiriting:")
+    await message.answer("Foydalanuvchini tanlang yoki ID yuboring:", reply_markup=kb)
+
+@dp.message(AddUser.telegram_id, F.user_shared)
+async def process_user_selection(message: Message, state: FSMContext):
+    telegram_id = message.user_shared.user_id
+    await state.update_data(telegram_id=telegram_id)
+    await state.set_state(AddUser.full_name)
+    await message.answer("Endi foydalanuvchining to‘liq ismini kiriting:", reply_markup=ReplyKeyboardRemove())
 
 
 @dp.message(AddUser.telegram_id, IsBotAdminFilter(ADMINS))
@@ -173,7 +196,7 @@ async def add_user_full_name(message: Message, state: FSMContext):
 async def add_user_squad(message: Message, state: FSMContext):
     await state.update_data(full_name=message.text)
     await state.set_state(AddUser.squad)
-    await message.answer("Squad nomini kiriting:")
+    await message.answer("Otryad nomini kiriting:")
 
 
 @dp.message(AddUser.squad, IsBotAdminFilter(ADMINS))
@@ -184,7 +207,7 @@ async def save_user_to_db(message: Message, state: FSMContext):
     squad = message.text
 
     try:
-        db.add_user(telegram_id=telegram_id, full_name=full_name)
+        db.add_user(telegram_id=telegram_id, full_name=full_name,squad=squad)
         await message.answer(f"Foydalanuvchi {full_name} bazaga qo'shildi ✅")
     except Exception as err:
         await message.answer(f"Xatolik yuz berdi: {err}")
