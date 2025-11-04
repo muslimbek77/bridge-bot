@@ -31,10 +31,71 @@ class Database:
         sql = """
         CREATE TABLE IF NOT EXISTS USERS(
         full_name TEXT,
-        telegram_id NUMBER unique );
+        telegram_id NUMBER unique,
+        squad TEXT
+          );
+        
               """
         self.execute(sql, commit=True)
-    
+
+    def create_table_reports(self):
+        sql = """
+        CREATE TABLE IF NOT EXISTS REPORTS(
+        telegram_id NUMBER unique,
+        full_name TEXT,
+        direction TEXT,
+        squad TEXT,
+        created_at TEXT,
+        car_img_url TEXT,
+        invoice_img_url TEXT
+          );
+        
+              """
+        self.execute(sql, commit=True)
+
+
+
+    # REPORTS ga qo'shish
+    def add_report(self, telegram_id:int, full_name:str, direction:str, squad:str,
+                   created_at:str, car_img_url:str, invoice_img_url:str):
+        """
+        REPORTS jadvaliga yangi report qo'shadi.
+        """
+        sql = """
+        INSERT INTO REPORTS(
+            telegram_id, full_name, direction, squad, created_at, car_img_url, invoice_img_url
+        ) VALUES(?, ?, ?, ?, ?, ?, ?);
+        """
+        return self.execute(
+            sql,
+            parameters=(telegram_id, full_name, direction, squad, created_at, car_img_url, invoice_img_url),
+            commit=True
+        )
+
+    # REPORTS jadvalidagi reportni o'chirish
+    def delete_report(self, telegram_id:int, created_at:str = None):
+        """
+        Telegram ID bo'yicha report o'chiradi.
+        Agar created_at ko'rsatilsa, faqat shu sanadagi report o'chadi.
+        Aks holda barcha reportlar o'chadi.
+        """
+        if created_at:
+            sql = "DELETE FROM REPORTS WHERE telegram_id = ? AND created_at = ?;"
+            parameters = (telegram_id, created_at)
+        else:
+            sql = "DELETE FROM REPORTS WHERE telegram_id = ?;"
+            parameters = (telegram_id,)
+        return self.execute(sql, parameters=parameters, commit=True)
+
+    # REPORTS jadvalidan telegram_id bo'yicha reportlarni olish
+    def get_reports_by_user(self, telegram_id:int):
+        """
+        Telegram ID bo'yicha barcha reportlarni oladi
+        """
+        sql = "SELECT * FROM REPORTS WHERE telegram_id = ?;"
+        return self.execute(sql, parameters=(telegram_id,), fetchall=True)
+
+
     def create_table_channels(self):
         sql = """
     CREATE TABLE IF NOT EXISTS Channels (

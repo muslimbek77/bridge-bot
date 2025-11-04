@@ -4,6 +4,7 @@ from aiogram.types import Message,InlineKeyboardButton,ReplyKeyboardRemove,Callb
 from aiogram.filters import Command
 from filters.admin import IsBotAdminFilter
 from states.reklama import Adverts,ChannelState,DelChannelState
+from states.admin import AddUser
 from aiogram.fsm.context import FSMContext #new
 from keyboard_buttons import admin_keyboard
 import time 
@@ -149,3 +150,43 @@ async def golibni_aniqlash_war(call: CallbackQuery, state=FSMContext):
     await call.message.answer("Bosh menu", reply_markup=admin_keyboard.admin_button)
 
 
+# Boshlash
+@dp.message(F.text=="➕ Foydalanuvchi qo'shish", IsBotAdminFilter(ADMINS))
+async def start_add_user(message: Message, state: FSMContext):
+    await state.set_state(AddUser.telegram_id)
+    await message.answer("Foydalanuvchining Telegram ID sini kiriting:")
+
+
+@dp.message(AddUser.telegram_id, IsBotAdminFilter(ADMINS))
+async def add_user_full_name(message: Message, state: FSMContext):
+    try:
+        telegram_id = int(message.text)
+    except:
+        await message.answer("Iltimos, to'g'ri Telegram ID kiriting (raqam bilan)")
+        return
+    await state.update_data(telegram_id=telegram_id)
+    await state.set_state(AddUser.full_name)
+    await message.answer("Foydalanuvchining to'liq ismini kiriting:")
+
+
+@dp.message(AddUser.full_name, IsBotAdminFilter(ADMINS))
+async def add_user_squad(message: Message, state: FSMContext):
+    await state.update_data(full_name=message.text)
+    await state.set_state(AddUser.squad)
+    await message.answer("Squad nomini kiriting:")
+
+
+@dp.message(AddUser.squad, IsBotAdminFilter(ADMINS))
+async def save_user_to_db(message: Message, state: FSMContext):
+    data = await state.get_data()
+    telegram_id = data["telegram_id"]
+    full_name = data["full_name"]
+    squad = message.text
+
+    try:
+        db.add_user(telegram_id=telegram_id, full_name=full_name)
+        await message.answer(f"Foydalanuvchi {full_name} bazaga qo'shildi ✅")
+    except Exception as err:
+        await message.answer(f"Xatolik yuz berdi: {err}")
+
+    await state.clear()

@@ -34,6 +34,7 @@ async def main() -> None:
     await set_default_commands(bot)
     db.create_table_users()
     db.create_table_channels()
+    db.create_table_reports()
     await dp.start_polling(bot)
 
 
