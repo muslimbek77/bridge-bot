@@ -10,6 +10,7 @@ admin_button = ReplyKeyboardMarkup(
             KeyboardButton(text="Reklama yuborish"),
         ],
          [
+             KeyboardButton(text="➕ Foydalanuvchi qo'shish"),
             KeyboardButton(text="⛓ Kanallar ro'yxati"), 
         ],
          [
