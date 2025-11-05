@@ -47,7 +47,8 @@ class Database:
         squad TEXT,
         created_at TEXT,
         car_img_url TEXT,
-        invoice_img_url TEXT
+        invoice_img_url TEXT,
+        report_url TEXT
           );
         
               """
@@ -57,18 +58,18 @@ class Database:
 
     # REPORTS ga qo'shish
     def add_report(self, telegram_id:int, full_name:str, direction:str, squad:str,
-                   created_at:str, car_img_url:str, invoice_img_url:str):
+                   created_at:str, car_img_url:str, invoice_img_url:str,report_url:str):
         """
         REPORTS jadvaliga yangi report qo'shadi.
         """
         sql = """
         INSERT INTO REPORTS(
-            telegram_id, full_name, direction, squad, created_at, car_img_url, invoice_img_url
-        ) VALUES(?, ?, ?, ?, ?, ?, ?);
+            telegram_id, full_name, direction, squad, created_at, car_img_url, invoice_img_url,report_url
+        ) VALUES(?, ?, ?, ?, ?, ?, ?,?);
         """
         return self.execute(
             sql,
-            parameters=(telegram_id, full_name, direction, squad, created_at, car_img_url, invoice_img_url),
+            parameters=(telegram_id, full_name, direction, squad, created_at, car_img_url, invoice_img_url,report_url),
             commit=True
         )
 
