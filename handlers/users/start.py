@@ -1,7 +1,7 @@
 from aiogram import types, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.utils.keyboard import ReplyKeyboardBuilder,InlineKeyboardBuilder
 from aiogram.types import InputMediaPhoto
 from datetime import datetime
 from loader import dp, db,bot
@@ -32,16 +32,46 @@ async def start_command(message: types.Message, state: FSMContext):
     )
 
 
-# === Foydalanuvchi “Kirish / Chiqish” ni tanlaganda ===
 @dp.message(F.text.in_(["🚗 Kirish", "🚪 Chiqish"]))
 async def handle_direction(message: types.Message, state: FSMContext):
     direction = "Kirish" if message.text == "🚗 Kirish" else "Chiqish"
     await state.update_data(direction=direction)
+
+    telegram_id = message.from_user.id
+    user = db.select_user(telegram_id=telegram_id)
+    squad = user[2] if len(user) > 2 else ""
+    await state.update_data(squad=squad)
+
+    # === Agar squad matnida "13" bo‘lsa, ikkita tugma chiqadi ===
+    if "13" in squad:
+        builder = InlineKeyboardBuilder()
+        builder.button(text="13-otryad butlash", callback_data="squad_13_butlash")
+        builder.button(text="13-otryad", callback_data="squad_13")
+        await message.answer(
+            f"Siz {direction} yo‘nalishini tanladingiz.\nEndi otryad turini tanlang:",
+            reply_markup=builder.as_markup()
+        )
+        await state.set_state(ReportForm.choose_squad)
+        return
+
+    # Aks holda, oddiy davom etadi
+    await state.set_state(ReportForm.car_image)
+    await message.answer(
+        f"✅ Siz {direction} yo‘nalishini tanladingiz.\nEndi mashina rasmini yuboring 📸"
+    )
+
+
+# === 13-otryad uchun callback ===
+@dp.callback_query(F.data.in_(["squad_13_butlash", "squad_13"]), ReportForm.choose_squad)
+async def choose_squad_callback(call: types.CallbackQuery, state: FSMContext):
+    chosen = "13-otryad butlash" if call.data == "squad_13_butlash" else "13-otryad"
+    await state.update_data(squad=chosen)
     await state.set_state(ReportForm.car_image)
 
-    await message.answer(f"✅ Siz {direction} yo‘nalishini tanladingiz.\nEndi mashina rasmini yuboring 📸")
-
-
+    await call.answer()
+    await call.message.edit_text(
+        f"✅ Siz {chosen} ni tanladingiz.\nEndi mashina rasmini yuboring 📸"
+    )
 # === Mashina rasmi ===
 @dp.message(ReportForm.car_image, F.photo)
 async def get_car_image(message: types.Message, state: FSMContext):
@@ -72,7 +102,7 @@ async def get_invoice_image(message: types.Message, state: FSMContext):
     telegram_id = message.from_user.id
     user = db.select_user(telegram_id=telegram_id)
     full_name = user[0] if user else "—"
-    squad = user[2] if user and len(user) > 2 else ""
+    squad = data.get("squad", "—")
 
     # Rasmli MediaGroup tayyorlash
     media = [
@@ -109,7 +139,7 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
         return
 
     full_name = user[0]
-    squad = user[2] if len(user) > 2 else ""
+    squad = data.get("squad","-")
     direction = data.get("direction", "")
     car_img_url = data.get("car_img_url", "")
     invoice_img_url = data.get("invoice_img_url", "")

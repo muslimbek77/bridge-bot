@@ -8,6 +8,7 @@ class AddUser(StatesGroup):
 
 class ReportForm(StatesGroup):
     direction = State()
+    choose_squad =State()
     car_image = State()
     invoice_image = State()
     confirm = State() 
