@@ -5,7 +5,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from aiogram.types import InputMediaPhoto
 from datetime import datetime
 from loader import dp, db,bot
-from data.config import CHANNEL_ID
+from data.config import CHANNEL_ID,CHANNEL_USERNAME
 
 from keyboard_buttons.subscription import confirm_kb
 from states.admin import ReportForm
@@ -115,6 +115,44 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
     invoice_img_url = data.get("invoice_img_url", "")
     created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    caption = (
+        f"📋 <b>Yangi Hisobot</b>\n\n"
+        f"👮 Navbatchi: <b>{full_name}</b>\n"
+        f"🏷 Otryad: {squad}\n"
+        f"📌 Yo‘nalish: <b>{direction}</b>\n"
+        f"🕒 Sana: {created_at}"
+    )
+
+    msg_id = None
+    report_url = None
+
+    try:
+        # === Kanalga yuborish ===
+        if car_img_url and invoice_img_url:
+            media = [
+                InputMediaPhoto(media=car_img_url, caption=caption, parse_mode="HTML"),
+                InputMediaPhoto(media=invoice_img_url)
+            ]
+            sent = await bot.send_media_group(chat_id=CHANNEL_ID, media=media)
+            msg_id = sent[0].message_id  # birinchi post ID sini olamiz
+        elif car_img_url:
+            sent_msg = await bot.send_photo(chat_id=CHANNEL_ID, photo=car_img_url, caption=caption, parse_mode="HTML")
+            msg_id = sent_msg.message_id
+        elif invoice_img_url:
+            sent_msg = await bot.send_photo(chat_id=CHANNEL_ID, photo=invoice_img_url, caption=caption, parse_mode="HTML")
+            msg_id = sent_msg.message_id
+        else:
+            sent_msg = await bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode="HTML")
+            msg_id = sent_msg.message_id
+
+        # === Xabar URL hosil qilish ===
+        report_url = f"https://t.me/{CHANNEL_USERNAME}/{msg_id}"
+
+    except Exception as e:
+        await call.message.answer(f"⚠️ Kanalga yuborishda xatolik: {e}")
+        report_url = None
+
+    # === Ma'lumotni bazaga saqlash ===
     try:
         db.add_report(
             telegram_id=telegram_id,
@@ -123,47 +161,22 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
             squad=squad,
             created_at=created_at,
             car_img_url=car_img_url,
-            invoice_img_url=invoice_img_url
+            invoice_img_url=invoice_img_url,
+            report_url=report_url
         )
     except Exception as err:
         await call.message.edit_text(f"❌ Xatolik: {err}")
         await state.clear()
         return
 
-    # === Kanalga yuboriladigan matn ===
-    caption = (
-        f"📋 <b>Yangi Hisobot</b>\n\n"
-        f"👮 Navbatchi:: <b>{full_name}</b>\n"
-        f"🏷 Otryad: {squad}\n"
-        f"📌 Yo‘nalish: <b>{direction}</b>\n"
-        f"🕒 Sana: {created_at}"
+    # === Foydalanuvchiga javob ===
+    text = (
+        f"✅ <b>{direction}</b> uchun report muvaffaqiyatli saqlandi va kanalga yuborildi!\n"
+        f"🕒 Sana: {created_at}\n"
+        f"🔗 <a href='{report_url}'>Kanal xabari</a>"
     )
-    try:
-        # Ikkita rasm bo‘lsa → media group
-        if car_img_url and invoice_img_url:
-            media = [
-                InputMediaPhoto(media=car_img_url, caption=caption, parse_mode="HTML"),
-                InputMediaPhoto(media=invoice_img_url)
-            ]
-            await bot.send_media_group(chat_id=CHANNEL_ID, media=media)
 
-        # Faqat bitta rasm bo‘lsa
-        elif car_img_url:
-            await bot.send_photo(chat_id=CHANNEL_ID, photo=car_img_url, caption=caption, parse_mode="HTML")
-        elif invoice_img_url:
-            await bot.send_photo(chat_id=CHANNEL_ID, photo=invoice_img_url, caption=caption, parse_mode="HTML")
-        # Umuman rasm bo‘lmasa
-        else:
-            await bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode="HTML")
-
-    except Exception as e:
-        await call.message.answer(f"⚠️ Kanalga yuborishda xatolik: {e}")
-
-    # Foydalanuvchiga javob
-    await call.message.edit_text(
-        f"✅ <b>{direction}</b> uchun report muvaffaqiyatli saqlandi va kanalga yuborildi!\n🕒 Sana: {created_at}",
-        parse_mode="HTML"
-    )
+    await call.message.edit_text(text, parse_mode="HTML")
     await state.clear()
 
 
