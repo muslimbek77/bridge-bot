@@ -7,15 +7,17 @@ admin_button = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text="Foydalanuvchilar soni"),
-            KeyboardButton(text="Reklama yuborish"),
+            KeyboardButton(text="➕ Foydalanuvchi qo'shish"),
+
+            
         ],
          [
-             KeyboardButton(text="➕ Foydalanuvchi qo'shish"),
-
-            # KeyboardButton(text="⛓ Kanallar ro'yxati"), 
+KeyboardButton(text="🔄 Foydalanuvchini yangilash"),
+KeyboardButton(text="🗑 Foydalanuvchini o'chirish"),        
         ],
         [
             KeyboardButton(text="📊 Hisobot"),
+            KeyboardButton(text="Reklama yuborish"),
         ],
         #  [
         #     KeyboardButton(text="➕ Kanal qo'shish"), 

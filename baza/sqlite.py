@@ -155,6 +155,32 @@ class Database:
     def all_users_id(self):
         return self.execute("SELECT telegram_id FROM Users;", fetchall=True)
 
+    def update_user(self, telegram_id: int, full_name: str = None, squad: str = None):
+        """
+        Foydalanuvchi ma'lumotlarini yangilaydi.
+        Faqat berilgan maydonlarni yangilaydi.
+        """
+        fields = []
+        params = []
+        if full_name:
+            fields.append("full_name = ?")
+            params.append(full_name)
+        if squad:
+            fields.append("squad = ?")
+            params.append(squad)
+
+        if not fields:
+            return None
+
+        params.append(telegram_id)
+        sql = f"UPDATE Users SET {', '.join(fields)} WHERE telegram_id = ?"
+        return self.execute(sql, parameters=tuple(params), commit=True)
+
+    # Foydalanuvchini o‘chirish
+    def delete_user(self, telegram_id: int):
+        sql = "DELETE FROM Users WHERE telegram_id = ?"
+        return self.execute(sql, parameters=(telegram_id,), commit=True)
+
 def logger(statement):
     print(f"""
 _____________________________________________________        

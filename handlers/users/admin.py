@@ -5,7 +5,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 
 from filters.admin import IsBotAdminFilter
 from states.reklama import Adverts,ChannelState,DelChannelState
-from states.admin import AddUser
+from states.admin import AddUser,UpdateUser,DeleteUser
 from aiogram.fsm.context import FSMContext #new
 from keyboard_buttons import admin_keyboard
 import time 
@@ -15,12 +15,28 @@ from aiogram import F
 async def is_admin(message:Message):
     await message.answer(text="Admin menu",reply_markup=admin_keyboard.admin_button)
 
-
-@dp.message(F.text=="Foydalanuvchilar soni",IsBotAdminFilter(ADMINS))
-async def users_count(message:Message):
+@dp.message(F.text == "Foydalanuvchilar soni", IsBotAdminFilter(ADMINS))
+async def users_count(message: Message):
     counts = db.count_users()
-    text = f"Botimizda {counts[0]} ta foydalanuvchi bor"
-    await message.answer(text=text)
+    users = db.execute(
+        "SELECT full_name, squad, telegram_id FROM users ORDER BY full_name ASC",
+        fetchall=True
+    )
+
+    text = f"📊 <b>Botimizda {counts[0]} ta foydalanuvchi bor</b>\n\n"
+
+    if users:
+        for i, user in enumerate(users, start=1):
+            full_name = user[0] or "—"
+            squad = user[1] or "—"
+            telegram_id = user[2]
+            text += f"{i}. <b>{full_name}</b> — {squad}\n🆔 <code>{telegram_id}</code>\n\n"
+    else:
+        text += "❌ Hozircha foydalanuvchilar mavjud emas."
+
+    for part in [text[i:i+4000] for i in range(0, len(text), 4000)]:
+        await message.answer(part, parse_mode="HTML")
+
 
 @dp.message(F.text=="Reklama yuborish",IsBotAdminFilter(ADMINS))
 async def advert_dp(message:Message,state:FSMContext):
@@ -219,5 +235,164 @@ async def save_user_to_db(message: Message, state: FSMContext):
         await message.answer(f"Foydalanuvchi {full_name} bazaga qo'shildi ✅")
     except Exception as err:
         await message.answer(f"Xatolik yuz berdi: {err}")
+
+    await state.clear()
+
+
+
+@dp.message(F.text == "🔄 Foydalanuvchini yangilash", IsBotAdminFilter(ADMINS))
+async def start_update_user(message: Message, state: FSMContext):
+    # Tugma orqali foydalanuvchi tanlash
+    kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(
+                text="👤 Foydalanuvchini tanlash",
+                request_user=KeyboardButtonRequestUser(
+                    request_id=777,
+                    user_is_bot=False
+                )
+            )]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+
+    await state.set_state(UpdateUser.telegram_id)
+    await message.answer("Yangilamoqchi bo‘lgan foydalanuvchini tanlang yoki Telegram ID yuboring:", reply_markup=kb)
+
+
+# === Tugma orqali foydalanuvchi tanlandi ===
+@dp.message(UpdateUser.telegram_id, F.user_shared)
+async def process_update_user_selection(message: Message, state: FSMContext):
+    telegram_id = message.user_shared.user_id
+    user = db.select_user(telegram_id=telegram_id)
+    if not user:
+        await message.answer("❌ Bunday foydalanuvchi topilmadi.")
+        await state.clear()
+        return
+
+    await state.update_data(telegram_id=telegram_id)
+    await state.set_state(UpdateUser.choice)
+
+    await message.answer(
+        "Qaysi ma'lumotni yangilaysiz?\n\n1️⃣ Ism-familiya\n2️⃣ Otryad",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="1️⃣ Ism-familiya")],
+                [KeyboardButton(text="2️⃣ Otryad")]
+            ],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+    )
+
+
+# === ID orqali foydalanuvchi tanlandi ===
+@dp.message(UpdateUser.telegram_id, IsBotAdminFilter(ADMINS))
+async def update_user_by_id(message: Message, state: FSMContext):
+    try:
+        telegram_id = int(message.text)
+    except ValueError:
+        await message.answer("Iltimos, to‘g‘ri Telegram ID kiriting (faqat raqam).")
+        return
+
+    user = db.select_user(telegram_id=telegram_id)
+    if not user:
+        await message.answer("❌ Bunday foydalanuvchi topilmadi.")
+        await state.clear()
+        return
+
+    await state.update_data(telegram_id=telegram_id)
+    await state.set_state(UpdateUser.choice)
+
+    await message.answer(
+        f"Tanlangan foydalanuvchi: {user[1]} (ID: {telegram_id})\n\nQaysi maydonni yangilaysiz?",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="1️⃣ Ism-familiya")],
+                [KeyboardButton(text="2️⃣ Otryad")]
+            ],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+    )
+
+
+# === Qaysi maydon yangilanadi ===
+@dp.message(UpdateUser.choice, IsBotAdminFilter(ADMINS))
+async def update_choice(message: Message, state: FSMContext):
+    if "1" in message.text:
+        await state.set_state(UpdateUser.full_name)
+        await message.answer("Yangi ism-familiyasini kiriting:", reply_markup=ReplyKeyboardRemove())
+    elif "2" in message.text:
+        # mavjud squadlardan tanlash imkoniyati
+        squads_data = db.execute("SELECT DISTINCT squad FROM Users", fetchall=True)
+        squads = {s[0].strip() for s in squads_data if s[0]}
+        kb = admin_keyboard.squad_selection_keyboard(squads)
+
+        await state.set_state(UpdateUser.squad)
+        await message.answer(
+            "Yangi otryad nomini tanlang yoki kiriting:",
+            reply_markup=kb
+        )
+    else:
+        await message.answer("Iltimos, 1 yoki 2 ni tanlang.")
+
+
+# === Yangi ism saqlash ===
+@dp.message(UpdateUser.full_name, IsBotAdminFilter(ADMINS))
+async def save_new_full_name(message: Message, state: FSMContext):
+    data = await state.get_data()
+    telegram_id = data["telegram_id"]
+    db.update_user(telegram_id=telegram_id, full_name=message.text)
+    await message.answer("✅ Ism-familiya yangilandi.", reply_markup=admin_keyboard.admin_button)
+    await state.clear()
+
+
+# === Yangi otryad saqlash ===
+@dp.message(UpdateUser.squad, IsBotAdminFilter(ADMINS))
+async def save_new_squad(message: Message, state: FSMContext):
+    data = await state.get_data()
+    telegram_id = data["telegram_id"]
+    db.update_user(telegram_id=telegram_id, squad=message.text)
+    await message.answer("✅ Otryad yangilandi.", reply_markup=admin_keyboard.admin_button)
+    await state.clear()
+
+
+@dp.message(F.text == "🗑 Foydalanuvchini o'chirish", IsBotAdminFilter(ADMINS))
+async def start_delete_user(message: Message, state: FSMContext):
+    users = db.execute("SELECT full_name, telegram_id FROM users", fetchall=True)
+    if not users:
+        await message.answer("❌ Bazada foydalanuvchilar topilmadi.")
+        return
+
+    # Har bir foydalanuvchi uchun tugma yaratamiz
+    kb = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=f"{user[0]} ({user[1]})")] for user in users],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+
+    await state.set_state(DeleteUser.telegram_id)
+    await message.answer("Kimni o‘chirmoqchisiz? Tanlang:", reply_markup=kb)
+
+
+@dp.message(DeleteUser.telegram_id, IsBotAdminFilter(ADMINS))
+async def delete_user_from_db(message: Message, state: FSMContext):
+    text = message.text.strip()
+
+    # Format: "Foydalanuvchi ism (123456789)"
+    try:
+        telegram_id = int(text.split("(")[-1].replace(")", ""))
+    except:
+        await message.answer("❌ Noto‘g‘ri format. Iltimos, tugmadan tanlang yoki ID kiriting.")
+        return
+
+    user = db.select_user(telegram_id=telegram_id)
+    if not user:
+        await message.answer("❌ Bunday foydalanuvchi topilmadi.")
+    else:
+        db.delete_user(telegram_id)
+        await message.answer(f"✅ {user[1]} foydalanuvchisi muvaffaqiyatli o‘chirildi.", reply_markup=ReplyKeyboardRemove())
 
     await state.clear()

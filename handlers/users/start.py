@@ -203,7 +203,6 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
     text = (
         f"✅ <b>{direction}</b> uchun report muvaffaqiyatli saqlandi va kanalga yuborildi!\n"
         f"🕒 Sana: {created_at}\n"
-        f"🔗 <a href='{report_url}'>Kanal xabari</a>"
     )
 
     await call.message.edit_text(text, parse_mode="HTML")
