@@ -12,3 +12,9 @@ class ReportForm(StatesGroup):
     car_image = State()
     invoice_image = State()
     confirm = State() 
+
+
+class ReportPDFForm(StatesGroup):
+    choose_squad = State()
+    choose_type = State()
+    enter_date = State()

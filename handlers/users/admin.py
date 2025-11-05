@@ -195,8 +195,16 @@ async def add_user_full_name(message: Message, state: FSMContext):
 @dp.message(AddUser.full_name, IsBotAdminFilter(ADMINS))
 async def add_user_squad(message: Message, state: FSMContext):
     await state.update_data(full_name=message.text)
+
+    # Bazadan unikal squadlarni olish
+    squads_data = db.execute("SELECT DISTINCT squad FROM Users", fetchall=True)
+    squads = set({s[0].strip() for s in squads_data if s[0]})
+    kb = admin_keyboard.squad_selection_keyboard(squads)
     await state.set_state(AddUser.squad)
-    await message.answer("Otryad nomini kiriting:")
+    await message.answer(
+        "Otryad nomini tanlang yoki yangi otryad qo‘shing:",
+        reply_markup=kb
+    )
 
 
 @dp.message(AddUser.squad, IsBotAdminFilter(ADMINS))

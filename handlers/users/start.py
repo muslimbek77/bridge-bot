@@ -45,8 +45,8 @@ async def handle_direction(message: types.Message, state: FSMContext):
     # === Agar squad matnida "13" bo‘lsa, ikkita tugma chiqadi ===
     if "13" in squad:
         builder = InlineKeyboardBuilder()
-        builder.button(text="13-otryad butlash", callback_data="squad_13_butlash")
-        builder.button(text="13-otryad", callback_data="squad_13")
+        builder.button(text="13-Otryad butlash", callback_data="squad_13_butlash")
+        builder.button(text="13-Otryad", callback_data="squad_13")
         await message.answer(
             f"Siz {direction} yo‘nalishini tanladingiz.\nEndi otryad turini tanlang:",
             reply_markup=builder.as_markup()
@@ -64,7 +64,7 @@ async def handle_direction(message: types.Message, state: FSMContext):
 # === 13-otryad uchun callback ===
 @dp.callback_query(F.data.in_(["squad_13_butlash", "squad_13"]), ReportForm.choose_squad)
 async def choose_squad_callback(call: types.CallbackQuery, state: FSMContext):
-    chosen = "13-otryad butlash" if call.data == "squad_13_butlash" else "13-otryad"
+    chosen = "13-Otryad butlash" if call.data == "squad_13_butlash" else "13-Otryad"
     await state.update_data(squad=chosen)
     await state.set_state(ReportForm.car_image)
 
@@ -118,7 +118,7 @@ async def get_invoice_image(message: types.Message, state: FSMContext):
         f"👥 <b>Otryad:</b> {squad}\n"
         f"🧭 <b>Yo‘nalish:</b> {direction}\n\n"
         f"Agar hammasi to‘g‘ri bo‘lsa — <b>Yuborish</b> tugmasini bosing.\n"
-        f"Agar noto‘g‘ri bo‘lsa — <b>O‘chirish</b> tugmasini bosing."
+        f"Agar noto‘g‘ri bo‘lsa — <b>Bekor qilish</b> tugmasini bosing."
     )
     await message.answer(summary, reply_markup=confirm_kb(), parse_mode="HTML")
     await state.set_state(ReportForm.confirm)

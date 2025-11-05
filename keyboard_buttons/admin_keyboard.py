@@ -11,7 +11,11 @@ admin_button = ReplyKeyboardMarkup(
         ],
          [
              KeyboardButton(text="➕ Foydalanuvchi qo'shish"),
+
             # KeyboardButton(text="⛓ Kanallar ro'yxati"), 
+        ],
+        [
+            KeyboardButton(text="📊 Hisobot"),
         ],
         #  [
         #     KeyboardButton(text="➕ Kanal qo'shish"), 
@@ -45,3 +49,32 @@ def inline_wars_btn(wars):
     wars_check = InlineKeyboardMarkup(inline_keyboard=[l])
     
     return wars_check
+
+
+
+
+def squad_keyboard(squads):
+    builder = InlineKeyboardBuilder()
+    for squad in squads:
+        builder.button(text=squad, callback_data=f"squad_{squad}")
+    builder.adjust(2)
+    return builder.as_markup()
+
+def report_type_keyboard():
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📅 Oylik", callback_data="type_month")
+    builder.button(text="🗓 Kunlik", callback_data="type_day")
+    builder.adjust(2)
+    return builder.as_markup()
+
+def squad_selection_keyboard(existing_squads: list):
+    """
+    existing_squads: list of strings
+    """
+    buttons = [[KeyboardButton(text=squad)] for squad in existing_squads]
+    kb = ReplyKeyboardMarkup(
+        keyboard=buttons,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return kb
