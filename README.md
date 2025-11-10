@@ -1,6 +1,6 @@
 # Aiogram 3 New Template (SQLite db)
 
-### 1. Create virtual environment and install packages
+### 1. Create virtual environment and install packages.
 Windows
 ```shell
 python -m venv venv && venv\Scripts\activate && pip install -r requirements.txt
