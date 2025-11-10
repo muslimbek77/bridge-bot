@@ -14,6 +14,7 @@ from states.admin import ReportForm
 
 @dp.message(CommandStart())
 async def start_command(message: types.Message, state: FSMContext):
+    await state.clear()
     telegram_id = message.from_user.id
     user = db.select_user(telegram_id=telegram_id)
 

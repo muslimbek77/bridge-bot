@@ -6,7 +6,7 @@ from keyboard_buttons.admin_keyboard import squad_keyboard, report_type_keyboard
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import os
 
 # === Boshlang‘ich hisobot tugmasi ===
@@ -46,14 +46,10 @@ async def create_pdf_report(message: types.Message, state: FSMContext):
     date_str = message.text.strip()
 
     # Filter sharti
-    if report_type == "oy":
-        query = "SELECT full_name, direction, created_at, report_url FROM REPORTS WHERE squad = ? AND created_at LIKE ?"
-        params = (squad, f"{date_str}%")
-    else:
-        query = "SELECT full_name, direction, created_at, report_url FROM REPORTS WHERE squad = ? AND created_at LIKE ?"
-        params = (squad, f"{date_str}%")
-
+    query = "SELECT full_name, direction, created_at, report_url FROM REPORTS WHERE squad = ? AND created_at LIKE ?"
+    params = (squad, f"{date_str}%")
     reports = db.execute(query, parameters=params, fetchall=True)
+
     if not reports:
         await message.answer("❌ Bu sana uchun hech qanday ma’lumot topilmadi.")
         await state.clear()
@@ -67,14 +63,23 @@ async def create_pdf_report(message: types.Message, state: FSMContext):
     styles = getSampleStyleSheet()
     elements = []
 
+    # Title
     title = Paragraph(f"■ {squad.upper()} — Arxiv ({date_str})", styles["Title"])
     elements.append(title)
     elements.append(Spacer(1, 12))
 
+    # Link style
+    link_style = ParagraphStyle(name="link_style", textColor=colors.blue, underline=True)
+
+    # Table data
     table_data = [["№", "F.I.Sh", "Yo‘nalish", "Vaqt", "Telegram havola"]]
     for i, row in enumerate(reports, 1):
         full_name, direction, created_at, report_url = row
-        table_data.append([str(i), full_name, direction, created_at, report_url or "—"])
+        if report_url:
+            link_paragraph = Paragraph(f'<a href="{report_url}">{report_url}</a>', link_style)
+        else:
+            link_paragraph = Paragraph("—", styles["Normal"])
+        table_data.append([str(i), full_name, direction, created_at, link_paragraph])
 
     table = Table(table_data, colWidths=[25, 120, 100, 100, 220])
     table.setStyle(TableStyle([
