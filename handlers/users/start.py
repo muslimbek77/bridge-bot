@@ -5,13 +5,13 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder,InlineKeyboardBuilder
 from aiogram.types import InputMediaPhoto
 from datetime import datetime
 from loader import dp, db,bot
-from data.config import CHANNEL_ID,CHANNEL_USERNAME
+from data.config import CHANNEL_ID,CHANNEL_USERNAME,EXIT_CHANNEL_ID
 
 from keyboard_buttons.subscription import confirm_kb
 from states.admin import ReportForm
 
 
-# === /start komanda ===
+
 @dp.message(CommandStart())
 async def start_command(message: types.Message, state: FSMContext):
     telegram_id = message.from_user.id
@@ -27,7 +27,8 @@ async def start_command(message: types.Message, state: FSMContext):
     builder.adjust(2)
 
     await message.answer(
-        text=f"Assalomu alaykum, {user[0]}!\nIltimos, yo‘nalishni tanlang:",
+
+        text=f"Assalomu alaykum , {user[0]}!\nIltimos, yo‘nalishni tanlang:",
         reply_markup=builder.as_markup(resize_keyboard=True)
     )
 
@@ -165,15 +166,29 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
             ]
             sent = await bot.send_media_group(chat_id=CHANNEL_ID, media=media)
             msg_id = sent[0].message_id  # birinchi post ID sini olamiz
+
+            if direction == "Chiqish":
+                # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
+                await bot.send_media_group(chat_id=EXIT_CHANNEL_ID, media=media)
+            
         elif car_img_url:
             sent_msg = await bot.send_photo(chat_id=CHANNEL_ID, photo=car_img_url, caption=caption, parse_mode="HTML")
             msg_id = sent_msg.message_id
+            if direction == "Chiqish":
+                # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
+                await bot.send_photo(chat_id=EXIT_CHANNEL_ID, photo=car_img_url, caption=caption, parse_mode="HTML")
         elif invoice_img_url:
             sent_msg = await bot.send_photo(chat_id=CHANNEL_ID, photo=invoice_img_url, caption=caption, parse_mode="HTML")
             msg_id = sent_msg.message_id
+            if direction == "Chiqish":
+                # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
+                await bot.send_photo(chat_id=EXIT_CHANNEL_ID, photo=invoice_img_url, caption=caption, parse_mode="HTML")
         else:
             sent_msg = await bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode="HTML")
             msg_id = sent_msg.message_id
+            if direction == "Chiqish":
+                    # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
+                    await bot.send_message(chat_id=EXIT_CHANNEL_ID, text=caption, parse_mode="HTML")
 
         # === Xabar URL hosil qilish ===
         report_url = f"https://t.me/{CHANNEL_USERNAME}/{msg_id}"
