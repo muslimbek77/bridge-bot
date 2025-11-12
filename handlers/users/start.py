@@ -92,7 +92,10 @@ async def get_car_image(message: types.Message, state: FSMContext):
     await state.set_state(ReportForm.invoice_image)
 
     await message.answer("Endi hisobot rasmini yuboring 🧾")
-
+    
+@dp.message(ReportForm.car_image)
+async def invalid_car_image(message: types.Message):
+    await message.answer("❌ Iltimos, hisobot uchun faqat rasm yuboring.")
 
 # === Invoice rasmi ===
 @dp.message(ReportForm.invoice_image, F.photo)
@@ -132,6 +135,9 @@ async def get_invoice_image(message: types.Message, state: FSMContext):
     await state.set_state(ReportForm.confirm)
 
 
+@dp.message(ReportForm.invoice_image)
+async def invalid_invoice_image(message: types.Message):
+    await message.answer("❌ Iltimos, hisobot uchun faqat rasm yuboring.")
 # Kanal ID (manfiy bo‘ladi, masalan -1002176402628)
 
 @dp.callback_query(F.data == "report_send", ReportForm.confirm)
