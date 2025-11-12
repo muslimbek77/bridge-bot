@@ -49,6 +49,9 @@ async def handle_direction(message: types.Message, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.button(text="13-Otryad butlash", callback_data="squad_13_butlash")
         builder.button(text="13-Otryad", callback_data="squad_13")
+        builder.button(text="13-Otryad(KQF)", callback_data="squad_KQF")
+        builder.button(text="13-Otryad(67 Ombor)", callback_data="squad_67_Ombor")
+        builder.adjust(2)
         await message.answer(
             f"Siz {direction} yo‘nalishini tanladingiz.\nEndi otryad turini tanlang:",
             reply_markup=builder.as_markup()
@@ -64,9 +67,12 @@ async def handle_direction(message: types.Message, state: FSMContext):
 
 
 # === 13-otryad uchun callback ===
-@dp.callback_query(F.data.in_(["squad_13_butlash", "squad_13"]), ReportForm.choose_squad)
+@dp.callback_query(F.data.in_(["squad_13_butlash", "squad_13", "squad_KQF", "squad_67_Ombor"]), ReportForm.choose_squad)
 async def choose_squad_callback(call: types.CallbackQuery, state: FSMContext):
-    chosen = "13-Otryad butlash" if call.data == "squad_13_butlash" else "13-Otryad"
+    chosen = "13-Otryad butlash" if call.data == "squad_13_butlash" else \
+             "13-Otryad" if call.data == "squad_13" else \
+             "13-Otryad(KQF)" if call.data == "squad_KQF" else \
+             "13-Otryad(67 Ombor)" if call.data == "squad_67_Ombor" else None
     await state.update_data(squad=chosen)
     await state.set_state(ReportForm.car_image)
 
