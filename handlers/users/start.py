@@ -158,6 +158,7 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
     car_img_url = data.get("car_img_url", "")
     invoice_img_url = data.get("invoice_img_url", "")
     created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    food_city_channel = -1003478377761
 
     caption = (
         f"📋 <b>Yangi Hisobot</b>\n\n"
@@ -178,6 +179,9 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
                 InputMediaPhoto(media=invoice_img_url)
             ]
             sent = await bot.send_media_group(chat_id=CHANNEL_ID, media=media)
+            if squad == "Food City":
+                # Food City kanali uchun media yuborish
+                await bot.send_media_group(chat_id=food_city_channel, media=media)
             msg_id = sent[0].message_id  # birinchi post ID sini olamiz
 
             if direction == "Chiqish":
@@ -186,18 +190,25 @@ async def callback_report_send(call: types.CallbackQuery, state: FSMContext):
             
         elif car_img_url:
             sent_msg = await bot.send_photo(chat_id=CHANNEL_ID, photo=car_img_url, caption=caption, parse_mode="HTML")
+            if squad == "Food City":
+                await bot.send_photo(chat_id=food_city_channel, photo=car_img_url, caption=caption, parse_mode="HTML")
             msg_id = sent_msg.message_id
             if direction == "Chiqish":
                 # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
                 await bot.send_photo(chat_id=EXIT_CHANNEL_ID, photo=car_img_url, caption=caption, parse_mode="HTML")
         elif invoice_img_url:
             sent_msg = await bot.send_photo(chat_id=CHANNEL_ID, photo=invoice_img_url, caption=caption, parse_mode="HTML")
+            
+            if squad == "Food City":
+                await bot.send_photo(chat_id=food_city_channel, photo=invoice_img_url, caption=caption, parse_mode="HTML")
             msg_id = sent_msg.message_id
             if direction == "Chiqish":
                 # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
                 await bot.send_photo(chat_id=EXIT_CHANNEL_ID, photo=invoice_img_url, caption=caption, parse_mode="HTML")
         else:
             sent_msg = await bot.send_message(chat_id=CHANNEL_ID, text=caption, parse_mode="HTML")
+            if squad == "Food City":
+                await bot.send_message(chat_id=food_city_channel, text=caption, parse_mode="HTML")
             msg_id = sent_msg.message_id
             if direction == "Chiqish":
                     # Chiqish yo‘nalishi uchun EXIT_CHANNEL_ID ga ham yuborish
